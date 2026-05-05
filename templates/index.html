@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+
+    <main class="shell">
+        <section class="hero">
+            <div class="hero-copy">
+                <span class="eyebrow">AI Business Intelligence Copilot</span>
+                <h1>Turn raw CSVs into boardroom-ready answers.</h1>
+                <p>
+                    Upload a dataset, ask a business question, and get validated SQL, interactive charts,
+                    and analyst-style explanations in one polished workflow.
+                </p>
+                <div class="hero-metrics">
+                    <div class="metric-card">
+                        <span class="metric-label">Query Engine</span>
+                        <strong>Schema-aware SQL</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Insight Layer</span>
+                        <strong>LLM analyst summary</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Visual Layer</span>
+                        <strong>Interactive Plotly charts</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-panel glass">
+                <div class="panel-head">
+                    <span class="panel-kicker">Workspace</span>
+                    <span id="sessionBadge" class="status-pill status-idle">Awaiting dataset</span>
+                </div>
+                <label class="upload-zone" for="csvFile">
+                    <input id="csvFile" type="file" accept=".csv">
+                    <span class="upload-title">Drop your CSV here</span>
+                    <span class="upload-subtitle">or click to browse from your device</span>
+                </label>
+                <button id="uploadButton" class="primary-button">Load Dataset</button>
+                <div id="uploadMeta" class="upload-meta"></div>
+                <pre id="schemaPreview" class="schema-preview"></pre>
+            </div>
+        </section>
+
+        <section class="workspace">
+            <div class="chat-column glass">
+                <div class="panel-head">
+                    <div>
+                        <span class="panel-kicker">Conversation</span>
+                        <h2>Ask the copilot</h2>
+                    </div>
+                    <span class="status-pill status-live">Live</span>
+                </div>
+
+                <div id="chatFeed" class="chat-feed">
+                    <article class="message assistant intro-message">
+                        <div class="message-role">Assistant</div>
+                        <p>Upload a CSV to start. I’ll turn your question into SQL, run it safely, visualize the result, and explain what matters.</p>
+                    </article>
+                </div>
+
+                <form id="queryForm" class="composer">
+                    <textarea id="questionInput" rows="3" placeholder="Ask: Which region had the biggest revenue drop in the last quarter?"></textarea>
+                    <div class="composer-actions">
+                        <span class="composer-hint">Supports follow-up questions with conversation context.</span>
+                        <button type="submit" class="primary-button">Analyze</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="insight-column">
+                <div class="glass result-card">
+                    <div class="panel-head">
+                        <div>
+                            <span class="panel-kicker">Insight</span>
+                            <h2>Analyst brief</h2>
+                        </div>
+                    </div>
+                    <div id="insightCard" class="insight-copy empty-state">Your AI explanation will appear here.</div>
+                </div>
+
+                <div class="glass result-card">
+                    <div class="panel-head">
+                        <div>
+                            <span class="panel-kicker">Generated SQL</span>
+                            <h2>Traceable query</h2>
+                        </div>
+                    </div>
+                    <pre id="sqlCard" class="sql-card empty-state">No SQL generated yet.</pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="analytics-grid">
+            <div class="glass analytics-card chart-card">
+                <div class="panel-head">
+                    <div>
+                        <span class="panel-kicker">Visualization</span>
+                        <h2>Interactive chart</h2>
+                    </div>
+                </div>
+                <div id="chartContainer" class="chart-container empty-state">A chart will appear when the result shape supports it.</div>
+            </div>
+
+            <div class="glass analytics-card table-card">
+                <div class="panel-head">
+                    <div>
+                        <span class="panel-kicker">Query output</span>
+                        <h2>Result table</h2>
+                    </div>
+                </div>
+                <div id="tableContainer" class="table-container empty-state">Your query results will render here.</div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
