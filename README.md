@@ -1,123 +1,73 @@
 # AI Business Intelligence Copilot
 
-AI-powered business intelligence app that turns uploaded CSV files into SQLite-backed analysis with natural language querying, validated SQL generation, interactive visualizations, and concise AI insights.
+An enterprise-grade, Multi-Agent AI Business Intelligence platform that allows non-technical users to analyze their data using natural language. It instantly translates plain English into executable SQL queries, dynamically renders interactive charts (via Plotly), and generates proactive strategic business recommendations.
 
-## Features
+## 🚀 Key Features
 
-- Upload CSV data and convert it into SQLite automatically
-- Ask business questions in natural language
-- Generate schema-aware SQL using Groq + Llama
-- Validate and safely execute read-only SQL
-- Return concise AI summaries
-- Render interactive Plotly visualizations
-- Support follow-up questions with conversational context
-- Serve a custom FastAPI-based web UI
+*   **Multi-Agent Pipeline:**
+    *   **Business Guard:** Validates user prompts to prevent non-business queries and AI abuse.
+    *   **SQL Generator:** Dynamically converts natural language into SQLite queries based on dataset schema.
+    *   **Insight Summarizer (Descriptive):** Analyzes the exact output data and summarizes *what happened*.
+    *   **Action Plan Consultant (Prescriptive):** Uses insights to formulate a strategic plan on *what to do next*.
+*   **Data Health Panel:** Automatically audits uploaded CSVs, flagging missing values (`NaN`) and duplicate rows instantly.
+*   **Dynamic Visualizations:** Automatically selects optimal chart types (Bar, Line, Pie) with full manual overrides and interactive Plotly controls.
+*   **My Dashboard & Memory:** Allows users to "Pin" visualizations to a customizable dashboard. Saves session history seamlessly.
 
-## Project Structure
+## 🏗 System Architecture
 
-```text
-.
-├── main.py
-├── app.py
-├── config.py
-├── requirements.txt
-├── .env.example
-├── db.py
-├── agent.py
-├── db/
-│   ├── __init__.py
-│   └── database.py
-├── llm/
-│   ├── __init__.py
-│   ├── sql_generator.py
-│   └── insight_generator.py
-├── services/
-│   ├── __init__.py
-│   ├── query_executor.py
-│   └── visualization_service.py
-├── static/
-│   ├── app.js
-│   └── styles.css
-├── templates/
-│   └── index.html
-└── utils/
-    ├── __init__.py
-    ├── logging.py
-    └── schema_extractor.py
+The project has been meticulously split into decoupled Frontend and Backend services for high performance.
+
+*   **Frontend:** Vanilla JavaScript, HTML5, CSS3, and Plotly.js. Features a modern, glassmorphism enterprise UI.
+*   **Backend:** Python 3, FastAPI, Pandas, and SQLite.
+*   **LLM Integration:** LangChain orchestrated with LLaMA 3.3 (via Groq API) for ultra-fast reasoning.
+
+## 🛠 Installation & Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Shashank-SA/AI-Business-Intelligence-Copilot.git
+   cd AI-Business-Intelligence-Copilot
+   ```
+
+2. **Set up your environment:**
+   Create a `.env` file in the root of the project with your Groq API key:
+   ```
+   GROQ_API_KEY=your_groq_api_key_here
+   ```
+
+3. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Run the Project:**
+   The entire project (both backend API and frontend static files) is served concurrently via FastAPI.
+   ```bash
+   cd backend
+   python -m uvicorn main:app --host 0.0.0.0 --port 8000
+   ```
+
+5. **Access the Application:**
+   Open your browser and navigate to `http://localhost:8000`.
+
+## 📁 Repository Structure
+```
+├── backend/
+│   ├── main.py              # FastAPI entry point & API routes
+│   ├── config.py            # Environment configurations
+│   ├── db/
+│   │   ├── database.py      # Pandas to SQLite ingestion engine
+│   │   └── metadata_db.py   # Chat history & session management
+│   ├── llm/                 # Multi-Agent prompt chains & parsers
+│   └── services/            # Core business logic & query execution
+├── frontend/
+│   ├── templates/
+│   │   └── index.html       # Single-page application UI
+│   └── static/
+│       ├── app.js           # Frontend logic & API interfacing
+│       └── styles.css       # Enterprise UI styling
+└── requirements.txt         # Python dependencies
 ```
 
-## Tech Stack
-
-- Python
-- FastAPI
-- Plotly
-- Pandas
-- SQLite
-- LangChain
-- Groq API
-
-## Setup
-
-1. Create and activate a virtual environment.
-2. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Create a local `.env` from `.env.example` and add your Groq API key:
-
-```env
-GROQ_API_KEY=your_groq_api_key
-GROQ_SQL_MODEL=llama-3.3-70b-versatile
-GROQ_INSIGHT_MODEL=llama-3.3-70b-versatile
-APP_TITLE=AI Business Intelligence Copilot
-SQLITE_TEMP_PREFIX=sql_analyst_
-SAMPLE_PREVIEW_ROWS=5
-MAX_SQL_RETRIES=2
-LOG_LEVEL=INFO
-LOG_FORMAT=json
-LOG_FILE=
-```
-
-## Run
-
-Start the web app:
-
-```bash
-python -m uvicorn main:app --host 127.0.0.1 --port 8000
-```
-
-Open:
-
-```text
-http://127.0.0.1:8000
-```
-
-## Usage
-
-1. Upload a CSV file.
-2. Ask a business question such as:
-   - `Show revenue trend by date`
-   - `What are the top products by revenue?`
-   - `Why did it drop?`
-3. Review the generated SQL, insight summary, table output, and chart.
-
-## Notes
-
-- Only safe read-only SQL queries are allowed.
-- Follow-up questions use recent conversation context.
-- For best dependency stability, Python 3.11 or 3.12 is recommended.
-
-## GitHub Push
-
-Typical Git workflow:
-
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin <your-repo-url>
-git push -u origin main
-```
+## 🔒 Security & Privacy
+Uploaded CSV files are securely processed locally into ephemeral SQLite database tables. Only the table schema and the necessary aggregated outputs are sent to the LLM; your raw, entire dataset is never blindly exposed.

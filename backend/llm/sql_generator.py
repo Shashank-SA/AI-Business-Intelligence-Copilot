@@ -34,19 +34,20 @@ class SQLGenerator:
         self.llm = ChatGroq(model=self.model_name, temperature=0, api_key=settings.groq_api_key or None)
         self.sql_prompt = PromptTemplate.from_template(
             """
-You are a senior analytics engineer generating SQLite SQL for a business intelligence copilot.
+You are a senior analytics engineer generating SQLite SQL exclusively for a business intelligence copilot.
+This platform is strictly for business analytics — sales, revenue, KPIs, operations, customers, finance, marketing.
 
 Rules:
 - Use only the table "{table_name}".
 - Use only columns that exist in the schema.
 - Return only SQL with no explanation or markdown.
 - Generate a single read-only query.
-- Prefer explicit columns and clear aliases.
+- Prefer explicit columns and clear aliases for business readability.
 - Use SQLite syntax only.
 - Resolve ambiguous follow-up references like "it", "that", "those", "last month", or "the drop" using the conversation context.
-- If the user asks a follow-up "why" question, investigate likely drivers using the available dimensions in the data instead of returning NOT_ANSWERABLE when comparative analysis is possible.
+- If the user asks a follow-up "why" question, investigate likely business drivers using the available dimensions.
 - When a prior turn discussed a trend, drop, spike, top performer, or segment, use that as the target of the follow-up unless the user explicitly changes topic.
-- If the question cannot be answered from the data, return NOT_ANSWERABLE.
+- If the question cannot be answered from the business data, return NOT_ANSWERABLE.
 
 Conversation context:
 {history_text}

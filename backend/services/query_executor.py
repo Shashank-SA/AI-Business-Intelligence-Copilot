@@ -7,7 +7,9 @@ import pandas as pd
 
 from config import get_settings
 from db.database import DatabaseManager
+from llm.business_guard import BusinessGuard
 from llm.insight_generator import InsightGenerator
+from llm.recommendation_generator import RecommendationGenerator
 from llm.sql_generator import SQLGenerationContext, SQLGenerator, SQLValidationError
 from utils.logging import get_logger
 from utils.schema_extractor import SchemaExtractor
@@ -22,6 +24,7 @@ class QueryResult:
     sql: str
     dataframe: pd.DataFrame | None
     insight: str | None
+    recommendation: str | None
     error: str | None
     attempts: int
 
@@ -32,16 +35,38 @@ class QueryExecutor:
         database: DatabaseManager,
         sql_generator: SQLGenerator | None = None,
         insight_generator: InsightGenerator | None = None,
+        recommendation_generator: RecommendationGenerator | None = None,
+        business_guard: BusinessGuard | None = None,
     ):
         self.database = database
         self.sql_generator = sql_generator or SQLGenerator()
         self.insight_generator = insight_generator or InsightGenerator()
+        self.recommendation_generator = recommendation_generator or RecommendationGenerator()
+        self.business_guard = business_guard or BusinessGuard()
         self.schema_extractor = SchemaExtractor(database)
 
     def run(self, question: str, history: list[dict[str, Any]] | None = None, max_attempts: int | None = None) -> QueryResult:
         settings = get_settings()
         max_attempts = max_attempts or settings.max_sql_retries
         prepared_question = self._prepare_question(question, history or [])
+
+        # --- Business domain guard (runs before SQL generation) ---
+        column_names = list(self.database.dataframe.columns)
+        if not self.business_guard.is_business_question(question, column_names):
+            logger.info(
+                "Business guard blocked non-business question",
+                extra={"event": "business_guard_blocked", "question": question},
+            )
+            return QueryResult(
+                question=question,
+                sql="",
+                dataframe=None,
+                insight=None,
+                recommendation=None,
+                error=BusinessGuard.refusal_message(),
+                attempts=0,
+            )
+
         logger.info(
             "User query received",
             extra={
@@ -74,6 +99,10 @@ class QueryExecutor:
                 sql = self.sql_generator.validate_sql(sql, self.database.table_name)
                 dataframe = self._execute_sql(sql)
                 insight = self._build_insight(question, sql, dataframe, context.history_text)
+                
+                result_rows_str = dataframe.head(20).to_markdown(index=False) if not dataframe.empty else ""
+                recommendation = self.recommendation_generator.generate(question, insight, result_rows_str, context.history_text)
+                
                 logger.info(
                     "Query executed successfully",
                     extra={
@@ -90,6 +119,7 @@ class QueryExecutor:
                     sql=sql,
                     dataframe=dataframe,
                     insight=insight,
+                    recommendation=recommendation,
                     error=None,
                     attempts=attempt,
                 )
@@ -123,6 +153,7 @@ class QueryExecutor:
             sql=sql,
             dataframe=None,
             insight=None,
+            recommendation=None,
             error=friendly_error,
             attempts=max_attempts,
         )
@@ -201,11 +232,11 @@ class QueryExecutor:
     def _friendly_error(self, error_message: str) -> str:
         lowered = error_message.lower()
         if "no such column" in lowered:
-            return "I could not find one of the referenced columns in your dataset. Try rephrasing the question."
+            return "I could not find one of the referenced columns in your business dataset. Try rephrasing your question with the exact field names."
         if "syntax error" in lowered or "validation" in lowered:
-            return "I could not build a valid SQL query for that request. Please try a more specific question."
+            return "I could not build a valid query for that business request. Please try rephrasing with more specific metrics or dimensions."
         if "not answerable" in lowered:
-            return "That question does not appear to be answerable from the uploaded dataset."
+            return "That question does not appear to be answerable from the uploaded business dataset. Try a different angle or check the schema."
         if "unsafe sql" in lowered:
-            return "The generated query was blocked for safety reasons."
-        return f"I could not complete that analysis. Details: {error_message}"
+            return "The generated query was blocked for data safety reasons."
+        return f"I could not complete that business analysis. Please rephrase your question or try a different metric."

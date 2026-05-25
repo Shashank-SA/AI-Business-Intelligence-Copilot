@@ -6,3 +6,6 @@ __pycache__/
 venv/
 dist/
 build/
+backend/app.db
+backend/data_store/
+*.csv

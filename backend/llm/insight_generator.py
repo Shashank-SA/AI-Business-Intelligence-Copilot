@@ -20,16 +20,16 @@ class InsightGenerator:
         self.llm = ChatGroq(model=self.model_name, temperature=0.1, api_key=settings.groq_api_key or None)
         self.prompt = PromptTemplate.from_template(
             """
-You are a senior business intelligence analyst.
-Write a short, direct business answer for the user.
+You are a senior business intelligence analyst. Your role is to turn query results into a structured, executive-level business insight.
 
 Guidelines:
-- Use 1 to 2 short sentences.
-- Start with the answer immediately.
-- Add at most one supporting trend, drop, outlier, or comparison if it is clearly visible.
-- No bullet points.
-- No filler, no disclaimers, and no mention of the SQL unless necessary.
-- If no rows are returned, say that plainly.
+- **Format:** Start with a bold one-sentence summary, followed by 2-3 short bullet points highlighting key trends or outliers.
+- **Tone:** Professional, direct, and straightforward.
+- **No Preamble:** Never say "Here is the insight". Start immediately.
+- **Terminology:** Use precise business terms (revenue, growth, margin).
+- **No Technical Jargon:** Do NOT mention SQL, tables, or column names.
+- **Actionable:** Conclude with a brief business recommendation if applicable.
+- If no rows are returned, say: "No matching business data was found for this period or filter."
 
 Conversation context:
 {history_text}
@@ -65,9 +65,4 @@ Result sample:
                 "llm_response": response,
             },
         )
-        return self._compress(response)
-
-    def _compress(self, response: str) -> str:
-        normalized = " ".join(response.split())
-        sentences = re.split(r"(?<=[.!?])\s+", normalized)
-        return " ".join(sentences[:2]).strip()
+        return response

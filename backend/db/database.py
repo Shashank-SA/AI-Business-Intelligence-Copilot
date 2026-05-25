@@ -29,15 +29,25 @@ class DatabaseManager:
     dataframe: pd.DataFrame
 
     @classmethod
-    def from_csv(cls, uploaded_file, file_name: str | None = None) -> "DatabaseManager":
-        dataframe = pd.read_csv(uploaded_file)
+    def from_csv(cls, uploaded_file, file_name: str | None = None, session_id: str | None = None) -> "DatabaseManager":
+        try:
+            dataframe = pd.read_csv(uploaded_file, encoding="utf-8")
+        except UnicodeDecodeError:
+            uploaded_file.seek(0)
+            dataframe = pd.read_csv(uploaded_file, encoding="ISO-8859-1")
+            
         if dataframe.empty:
             raise ValueError("The uploaded CSV is empty.")
 
         resolved_file_name = file_name or getattr(uploaded_file, "name", "uploaded_data.csv")
         table_name = _sanitize_table_name(resolved_file_name)
-        temp_dir = Path(tempfile.mkdtemp(prefix=get_settings().sqlite_temp_prefix))
-        db_path = temp_dir / "data.sqlite"
+        
+        # Use a permanent directory for database files
+        data_store_dir = Path(__file__).parent.parent / "data_store"
+        data_store_dir.mkdir(exist_ok=True)
+        
+        db_filename = f"{session_id}.sqlite" if session_id else "data.sqlite"
+        db_path = data_store_dir / db_filename
 
         connection = sqlite3.connect(db_path)
         try:
@@ -57,6 +67,21 @@ class DatabaseManager:
             },
         )
 
+        return cls(db_path=str(db_path), table_name=table_name, dataframe=dataframe)
+
+    @classmethod
+    def load_existing(cls, session_id: str, table_name: str) -> "DatabaseManager":
+        db_path = Path(__file__).parent.parent / "data_store" / f"{session_id}.sqlite"
+        if not db_path.exists():
+            raise FileNotFoundError(f"Database for session {session_id} not found.")
+        
+        connection = sqlite3.connect(str(db_path))
+        try:
+            # Load the dataframe back into memory for pandas operations (KPIs, schemas, etc.)
+            dataframe = pd.read_sql_query(f'SELECT * FROM "{table_name}"', connection)
+        finally:
+            connection.close()
+            
         return cls(db_path=str(db_path), table_name=table_name, dataframe=dataframe)
 
     def get_connection(self) -> sqlite3.Connection:

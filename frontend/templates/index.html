@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} | AI-Powered Business Analytics</title>
+    <meta name="description" content="Turn raw business data into boardroom-ready insights. Upload a CSV, ask natural language questions, and get AI-powered analytics instantly.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+
+    <!-- Ambient background glows -->
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+    <div class="ambient ambient-c"></div>
+
+    <!-- Non-Business Domain Modal -->
+    <div id="domainModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
+        <div class="modal-box modal-danger">
+            <div class="modal-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            </div>
+            <h2 id="modalTitle">Non-Business Dataset Detected</h2>
+            <div class="modal-file-tag">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span class="modal-file-name">unknown file</span>
+            </div>
+            <p>
+                This platform is exclusively built for <strong>business analytics</strong> — including sales, revenue, KPIs, operations, finance, and customer data.
+                The uploaded dataset does not appear to be business-related and will not be processed by the BI engine.
+            </p>
+            <div class="modal-actions">
+                <button id="modalDismiss" class="btn-danger-outline">Upload Different File</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Domain Modal -->
+    <div id="successModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="successModalTitle" hidden>
+        <div class="modal-box modal-success">
+            <div class="modal-icon" style="background: rgba(62, 207, 142, 0.15); color: var(--accent);">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <h2 id="successModalTitle">Dataset Successfully Uploaded!</h2>
+            <div class="modal-file-tag">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span id="successModalFileName" class="modal-file-name">file.csv</span>
+            </div>
+            <p>
+                Your dataset has been loaded into the AI Business Intelligence engine. The data looks great and is ready for analysis!
+            </p>
+            <div class="modal-actions">
+                <button id="successModalDismiss" class="primary-button" style="width: 100%;">Start Analyzing</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <!-- Top Navbar -->
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <div class="navbar-brand">
+                <div class="brand-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                </div>
+                <span class="brand-name">BI Copilot</span>
+            </div>
+            <div class="navbar-center">
+                <div class="view-toggles">
+                    <button id="viewChatBtn" class="view-btn active">Chat Analysis</button>
+                    <button id="viewDashboardBtn" class="view-btn">My Dashboard</button>
+                </div>
+            </div>
+            <div class="navbar-badges">
+                <button id="toggleHistoryBtn" class="btn-ghost" aria-label="Toggle history">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                    History
+                </button>
+                <span class="domain-badge">
+                    <span class="badge-dot"></span>
+                    Business Mode
+                </span>
+                <span id="modelBadge" class="model-badge">AI Ready</span>
+            </div>
+        </div>
+    </nav>
+
+<div class="app-layout">
+    <!-- Chat History Sidebar -->
+    <aside id="historySidebar" class="sidebar collapsed">
+        <div class="sidebar-header">
+            <h3>Recent Sessions</h3>
+        </div>
+        <div class="sidebar-content" id="historyList">
+            <!-- History items populated via JS -->
+            <div class="history-empty">Loading history...</div>
+        </div>
+    </aside>
+
+    <main class="shell">
+
+        <!-- Chat View -->
+        <div id="chatView">
+            <!-- Hero Section -->
+            <section class="hero">
+            <div class="hero-copy">
+                <span class="eyebrow">AI Business Intelligence Copilot</span>
+                <h1>Turn business data into boardroom decisions.</h1>
+                <p>
+                    Upload your business CSV — sales, revenue, operations, customers — and ask questions in plain English.
+                    Get AI-powered insights, interactive charts, and executive-ready summaries instantly.
+                </p>
+                <div class="hero-metrics">
+                    <div class="metric-card">
+                        <div class="metric-icon">📊</div>
+                        <span class="metric-label">Query Engine</span>
+                        <strong>Schema-aware SQL</strong>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">🧠</div>
+                        <span class="metric-label">Insight Layer</span>
+                        <strong>Executive AI summaries</strong>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">📈</div>
+                        <span class="metric-label">Visual Layer</span>
+                        <strong>Interactive Plotly charts</strong>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">🔒</div>
+                        <span class="metric-label">Domain Guard</span>
+                        <strong>Business-only AI</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Panel -->
+            <div class="hero-panel glass">
+                <div class="panel-head">
+                    <div>
+                        <span class="panel-kicker">Workspace</span>
+                        <h2 class="panel-title">Load your dataset</h2>
+                    </div>
+                    <span id="sessionBadge" class="status-pill status-idle">Awaiting dataset</span>
+                </div>
+
+                <label class="upload-zone" for="csvFile" id="uploadZone">
+                    <input id="csvFile" type="file" accept=".csv" aria-label="Upload CSV file">
+                    <div class="upload-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <span class="upload-title">Drop your business CSV here</span>
+                    <span class="upload-subtitle">Sales · Revenue · Operations · Finance · HR</span>
+                </label>
+
+                <button id="uploadButton" class="primary-button upload-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    Load Dataset
+                </button>
+
+                <div id="uploadMeta" class="upload-meta"></div>
+
+                <!-- KPI Summary Bar (shown after upload) -->
+                <div id="kpiBar" class="kpi-bar" hidden>
+                    <div class="kpi-item" id="kpiRows"><span class="kpi-num">—</span><span class="kpi-label">Rows</span></div>
+                    <div class="kpi-item" id="kpiCols"><span class="kpi-num">—</span><span class="kpi-label">Columns</span></div>
+                    <div class="kpi-item" id="kpiNumeric"><span class="kpi-num">—</span><span class="kpi-label">Numeric</span></div>
+                    <div class="kpi-item" id="kpiDate"><span class="kpi-num">—</span><span class="kpi-label">Date Fields</span></div>
+                </div>
+
+                <!-- Data Health Panel -->
+                <div id="healthPanel" class="health-panel" hidden>
+                    <div id="healthIcon" class="health-icon"></div>
+                    <div id="healthMessage" class="health-message"></div>
+                </div>
+
+                <pre id="schemaPreview" class="schema-preview" aria-label="Detected schema"></pre>
+            </div>
+        </section>
+
+        <!-- Suggested Questions (shown after upload) -->
+        <div id="suggestionsSection" class="suggestions-section" hidden>
+            <span class="suggestions-label">💡 Suggested business questions</span>
+            <div id="suggestionChips" class="suggestion-chips"></div>
+        </div>
+
+        <!-- Main Workspace -->
+        <section class="workspace">
+            <!-- Chat Column -->
+            <div class="chat-column glass">
+                <div class="panel-head">
+                    <div>
+                        <span class="panel-kicker">Conversation</span>
+                        <h2 class="panel-title">Ask the copilot</h2>
+                    </div>
+                    <span class="status-pill status-live">
+                        <span class="live-dot"></span>Live
+                    </span>
+                </div>
+
+                <div id="chatFeed" class="chat-feed" role="log" aria-live="polite">
+                    <article class="message assistant intro-message">
+                        <div class="message-role">
+                            <div class="role-avatar assistant-avatar">BI</div>
+                            <span>Business Copilot</span>
+                        </div>
+                        <p>Welcome. I'm your AI Business Intelligence Copilot — I'm here to help you analyse business data only. Upload a CSV (sales, revenue, operations, customers, finance) and ask me anything about your business performance.</p>
+                    </article>
+                </div>
+
+                <form id="queryForm" class="composer" autocomplete="off">
+                    <div class="textarea-wrapper">
+                        <textarea
+                            id="questionInput"
+                            rows="3"
+                            maxlength="500"
+                            placeholder="e.g. Which region had the highest revenue last quarter?"
+                            aria-label="Business question input"
+                        ></textarea>
+                        <span id="charCounter" class="char-counter">0 / 500</span>
+                    </div>
+                    <div class="composer-actions">
+                        <span class="composer-hint">
+                            <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to send · Business questions only
+                        </span>
+                        <button type="submit" id="submitBtn" class="primary-button send-btn">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                            Analyze
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Insight Column -->
+            <div class="insight-column">
+                <div class="glass result-card insight-card">
+                    <div class="panel-head">
+                        <div>
+                            <span class="panel-kicker">AI Analysis</span>
+                            <h2 class="panel-title">Business insight</h2>
+                        </div>
+                        <span class="insight-badge">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            Executive Brief
+                        </span>
+                    </div>
+                    <div id="insightCard" class="insight-copy empty-state">
+                        <div class="empty-icon">🧠</div>
+                        <p>Your AI business insight will appear here after analysis.</p>
+                    </div>
+                </div>
+
+                <div class="glass result-card recommendation-card" style="margin-top: 24px;">
+                    <div class="panel-head">
+                        <div>
+                            <span class="panel-kicker">Prescriptive</span>
+                            <h2 class="panel-title">Action Plan</h2>
+                        </div>
+                        <span class="insight-badge" style="background: rgba(34, 197, 94, 0.15); color: #34d399;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                            Strategy
+                        </span>
+                    </div>
+                    <div id="recommendationCard" class="recommendation-copy empty-state" style="padding: 18px; color: var(--text-secondary);">
+                        <div class="empty-icon">🚀</div>
+                        <p>Actionable recommendations will appear here.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analytics Grid -->
+        <section class="analytics-grid">
+            <div class="glass analytics-card chart-card">
+                <div class="panel-head">
+                    <div>
+                        <span class="panel-kicker">Visualization</span>
+                        <h2 class="panel-title">Interactive chart</h2>
+                    </div>
+                    <div class="chart-actions">
+                        <div class="chart-type-toggles" id="chartTypeToggles" hidden>
+                            <button class="chart-type-btn" data-type="bar" title="Bar Chart">📊</button>
+                            <button class="chart-type-btn" data-type="line" title="Line Chart">📈</button>
+                            <button class="chart-type-btn" data-type="pie" title="Pie Chart">🥧</button>
+                        </div>
+                        <button id="pinChartBtn" class="btn-ghost" hidden>📌 Pin</button>
+                    </div>
+                </div>
+                <div id="chartContainer" class="chart-container empty-state">
+                    <div class="empty-icon">📈</div>
+                    <p>A business chart will appear when the result supports visualization.</p>
+                </div>
+            </div>
+
+            <div class="glass analytics-card table-card">
+                <div class="panel-head">
+                    <div>
+                        <span class="panel-kicker">Query output</span>
+                        <h2 class="panel-title">Result table</h2>
+                    </div>
+                    <div class="table-actions">
+                        <span id="rowCountBadge" class="row-count-badge" hidden></span>
+                        <button id="exportBtn" class="export-btn" hidden aria-label="Export results as CSV">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div id="tableContainer" class="table-container empty-state">
+                    <div class="empty-icon">📋</div>
+                    <p>Your business query results will render here.</p>
+                </div>
+            </div>
+        </section>
+        </div> <!-- End Chat View -->
+
+        <!-- Dashboard View -->
+        <section id="dashboardView" class="dashboard-view" hidden>
+            <div class="dashboard-header">
+                <h2>My Pinned Charts</h2>
+                <p>Saved visualizations from your analysis session.</p>
+            </div>
+            <div id="dashboardGrid" class="dashboard-grid">
+                <div id="dashboardEmpty" class="dashboard-empty">
+                    <div class="empty-icon">📌</div>
+                    <p>You haven't pinned any charts yet.<br>Go to Chat Analysis and click "Pin to Dashboard".</p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="app-footer">
+            <p>AI Business Intelligence Copilot · Business analytics only · Powered by Groq LLaMA</p>
+        </footer>
+    </main>
+</div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
